@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Donor Dashboard</h2>
+
+    <div class="dashboard-actions">
+        <a href="{{ url_for('post_food') }}" class="btn btn-primary">Post New Food Item</a>
+    </div>
+
+    <div class="dashboard-section">
+        <h3>Your Posted Food Items</h3>
+
+        {% if food_items %}
+            <div class="food-items-grid">
+                {% for item in food_items %}
+                    <div class="food-item-card {% if item.is_claimed %}claimed{% endif %}">
+                        <div class="food-item-header">
+                            <h4>{{ item.name }}</h4>
+                            <span class="status {% if item.is_claimed %}claimed{% else %}available{% endif %}">
+                                {{ 'Claimed' if item.is_claimed else 'Available' }}
+                            </span>
+                        </div>
+                        <div class="food-item-details">
+                            <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+                            <p><strong>Location:</strong> {{ item.location_name }}</p>
+                            <p><strong>Expires:</strong> {{ item.expiration_date.strftime('%Y-%m-%d') }}</p>
+                            {% if item.description %}
+                                <p><strong>Description:</strong> {{ item.description }}</p>
+                            {% endif %}
+                            <p><strong>Posted:</strong> {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="no-items">You haven't posted any food items yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

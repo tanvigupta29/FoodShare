@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Available Food Items</h2>
+
+    {% if food_items %}
+        <div class="food-items-grid">
+            {% for item in food_items %}
+                <div class="food-item-card">
+                    <div class="food-item-header">
+                        <h4>{{ item.name }}</h4>
+                        <span class="status available">Available</span>
+                    </div>
+                    <div class="food-item-details">
+                        <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+                        <p><strong>Location:</strong> {{ item.location_name }}</p>
+                        <p><strong>Expires:</strong> {{ item.expiration_date.strftime('%Y-%m-%d') }}</p>
+                        {% if item.description %}
+                            <p><strong>Description:</strong> {{ item.description }}</p>
+                        {% endif %}
+                        <p><strong>Posted:</strong> {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <button class="btn btn-primary claim-btn" data-id="{{ item.id }}">Claim This Item</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="no-items">No food items are currently available.</p>
+    {% endif %}
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const claimButtons = document.querySelectorAll('.claim-btn');
+
+        claimButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const foodId = this.getAttribute('data-id');
+
+                fetch(`/claim/${foodId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while claiming the food item.');
+                    });
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

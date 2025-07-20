@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>Reduce Food Waste, Feed Communities</h1>
+        <p>Connect with local organizations and individuals to share surplus food and reduce waste.</p>
+
+        <div class="hero-buttons">
+            {% if session.get('user_id') %}
+                {% if session.get('user_role') == 'donor' %}
+                    <a href="{{ url_for('donor.donor_dashboard') }}" class="btn btn-primary">Go to Donor Dashboard</a>
+                {% elif session.get('user_role') == 'recipient' %}
+                    <a href="{{ url_for('recipient.recipient_dashboard') }}" class="btn btn-primary">Go to Recipient Dashboard</a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Join Now</a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature-card">
+        <div class="feature-icon">📦</div>
+        <h3>Post Surplus Food</h3>
+        <p>Donors can post details about surplus food including name, quantity, and expiration date.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Find Available Food</h3>
+        <p>NGOs and individuals can browse and claim available food items in real-time.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🗺️</div>
+        <h3>Interactive Map</h3>
+        <p>See food locations on a map and pick the closest ones to you.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3>Real-Time Notifications</h3>
+        <p>Get alerts when your posted food is claimed or about to expire.</p>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <h2>How It Works</h2>
+    <div class="steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3>Register</h3>
+            <p>Create your account as a food donor or recipient/NGO.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3>Post or Browse</h3>
+            <p>Post your surplus food or explore available food items nearby.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3>Connect</h3>
+            <p>Claim food and coordinate pickup with the donor.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">4</div>
+            <h3>Reduce Waste</h3>
+            <p>Contribute to reducing food waste and supporting communities.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

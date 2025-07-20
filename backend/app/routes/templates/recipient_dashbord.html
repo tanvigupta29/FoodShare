@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Recipient Dashboard</h2>
+    
+    <div class="dashboard-section">
+        <h3>Your Claimed Items</h3>
+        {% if claimed_items %}
+            <div class="food-items-grid">
+                {% for claim in claimed_items %}
+                    <div class="food-item-card claimed">
+                        <div class="food-item-header">
+                            <h4>{{ claim.food_item.name }}</h4>
+                            <span class="status claimed">Claimed</span>
+                        </div>
+                        <div class="food-item-details">
+                            <p><strong>Quantity:</strong> {{ claim.food_item.quantity }}</p>
+                            <p><strong>Location:</strong> {{ claim.food_item.location_name }}</p>
+                            <p><strong>Expires:</strong> {{ claim.food_item.expiration_date.strftime('%Y-%m-%d') }}</p>
+                            {% if claim.food_item.description %}
+                                <p><strong>Description:</strong> {{ claim.food_item.description }}</p>
+                            {% endif %}
+                            <p><strong>Claimed on:</strong> {{ claim.claimed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Status:</strong> {{ claim.status.capitalize() }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="no-items">You haven't claimed any food items yet.</p>
+        {% endif %}
+    </div>
+    
+    <div class="dashboard-section">
+        <h3>Available Food Items</h3>
+        {% if food_items %}
+            <div class="food-items-grid">
+                {% for item in food_items %}
+                    <div class="food-item-card">
+                        <div class="food-item-header">
+                            <h4>{{ item.name }}</h4>
+                            <span class="status available">Available</span>
+                        </div>
+                        <div class="food-item-details">
+                            <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+                            <p><strong>Location:</strong> {{ item.location_name }}</p>
+                            <p><strong>Expires:</strong> {{ item.expiration_date.strftime('%Y-%m-%d') }}</p>
+                            {% if item.description %}
+                                <p><strong>Description:</strong> {{ item.description }}</p>
+                            {% endif %}
+                            <p><strong>Posted:</strong> {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <button class="btn btn-primary claim-btn" data-id="{{ item.id }}">Claim This Item</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="no-items">No food items are currently available.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const claimButtons = document.querySelectorAll('.claim-btn');
+        
+        claimButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const foodId = this.getAttribute('data-id');
+                
+                fetch(`/claim/${foodId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while claiming the food item.');
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

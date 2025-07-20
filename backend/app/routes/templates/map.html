@@ -1,0 +1,137 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<style>
+    /* styles unchanged */
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+{% endblock %}
+
+{% block content %}
+<h2>Food Items Map</h2>
+<div id="map-container">
+    <div id="map"></div>
+    <div id="food-items-sidebar">
+        <h3>Available Food Items</h3>
+        <div id="food-items-list">
+            <p class="loading">Loading food items...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const map = L.map('map').setView([20.5937, 78.9629], 5);
+    const foodItemsList = document.getElementById('food-items-list');
+    const markers = {};
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    fetch('/api/food-items')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                foodItemsList.innerHTML = '<p>No food items available.</p>';
+                return;
+            }
+
+            foodItemsList.innerHTML = '';
+            const bounds = [];
+
+            data.forEach(item => {
+                const marker = L.marker([item.latitude, item.longitude]).addTo(map);
+                markers[item.id] = marker;
+
+                const popupContent = `
+                    <div class="map-popup">
+                        <h3>${item.name}</h3>
+                        <p><strong>Quantity:</strong> ${item.quantity}</p>
+                        <p><strong>Expires:</strong> ${item.expiration_date}</p>
+                        <p><strong>Location:</strong> ${item.location_name}</p>
+                        ${item.description ? `<p><strong>Description:</strong> ${item.description}</p>` : ''}
+                        <div class="map-popup-claim">
+                            <button class="btn btn-primary btn-sm claim-btn" data-id="${item.id}">Claim This Item</button>
+                        </div>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+                bounds.push([item.latitude, item.longitude]);
+
+                const sidebarItem = document.createElement('div');
+                sidebarItem.className = 'map-food-item';
+                sidebarItem.dataset.id = item.id;
+                sidebarItem.innerHTML = `
+                    <h4>${item.name}</h4>
+                    <p><strong>Quantity:</strong> ${item.quantity}</p>
+                    <p><strong>Expires:</strong> ${item.expiration_date}</p>
+                `;
+                sidebarItem.addEventListener('click', () => {
+                    map.setView([item.latitude, item.longitude], 16);
+                    marker.openPopup();
+                });
+
+                foodItemsList.appendChild(sidebarItem);
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds);
+            }
+
+            // Handle claim click
+            document.querySelectorAll('.claim-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const foodId = this.dataset.id;
+                    const isLoggedIn = "{{ 'true' if session.get('user_id') else 'false' }}" === 'true';
+
+                    
+                    if (!isLoggedIn) {
+                        alert('Please log in to claim food items.');
+                        window.location.href = "{{ url_for('auth.login') }}";
+                        return;
+                    }
+
+                    fetch(`/claim/${foodId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        if (data.success) {
+                            if (markers[foodId]) {
+                                map.removeLayer(markers[foodId]);
+                            }
+                            const sidebarItem = document.querySelector(`.map-food-item[data-id="${foodId}"]`);
+                            if (sidebarItem) {
+                                sidebarItem.remove();
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Claim error:', error);
+                        alert('Something went wrong. Try again.');
+                    });
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error loading food items:', error);
+            foodItemsList.innerHTML = '<p>Error loading food items.</p>';
+        });
+
+    // Center to user's location
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+            map.setView([position.coords.latitude, position.coords.longitude], 13);
+        });
+    }
+});
+</script>
+{% endblock %}

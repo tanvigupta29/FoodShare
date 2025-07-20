@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Assign Delivery Partner</h2>
+
+<form method="POST">
+    <label>Claim ID:</label>
+    <select name="claim_id" required>
+        {% for claim in claims %}
+            <option value="{{ claim.id }}">Claim #{{ claim.id }} - Food ID {{ claim.food_id }}</option>
+        {% endfor %}
+    </select>
+
+    <label>Delivery Partner:</label>
+    <select name="partner_id" required>
+        {% for partner in partners %}
+            <option value="{{ partner.id }}">{{ partner.name }} ({{ partner.email }})</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">Assign</button>
+</form>
+{% endblock %}
+<!-- Delivery Partner Confirmation Modal -->
+<div class="modal fade" id="deliveryModal" tabindex="-1" aria-labelledby="deliveryModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deliveryModalLabel">Delivery Preference</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Do you want to assign a delivery partner for this food item?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="no-delivery-btn">No</button>
+        <button type="button" class="btn btn-primary" id="yes-delivery-btn">Yes</button>
+      </div>
+    </div>
+  </div>
+</div>

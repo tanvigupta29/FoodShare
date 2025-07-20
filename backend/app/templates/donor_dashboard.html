@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<main class="dashboard">
+    <header class="dashboard-header">
+        <h1 class="dashboard-title">🍽️ Donor Dashboard</h1>
+        <p class="dashboard-subtitle">Manage your food donations and help reduce waste</p>
+    </header>
+
+    <section class="dashboard-actions">
+        <a href="{{ url_for('donor.post_food') }}" class="btn btn-primary">
+            ➕ Post New Food Item
+        </a>
+    </section>
+
+    <section class="dashboard-content">
+        <h2>📋 Your Posted Food Items</h2>
+        {% if food_items %}
+            <div class="food-items-grid">
+                {% for item in food_items %}
+                    <div class="food-item-card {% if item.is_claimed %}claimed{% endif %}">
+                        <div class="card-header">
+                            <h3>{{ item.name }}</h3>
+                            <span class="badge {{ 'claimed' if item.is_claimed else 'available' }}">
+                                {{ '✅ Claimed' if item.is_claimed else '🟢 Available' }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+                            <p><strong>Location:</strong> {{ item.location_name }}</p>
+                            <p><strong>Expires:</strong> {{ item.expiration_date.strftime('%Y-%m-%d') }}</p>
+                            {% if item.description %}
+                                <p><strong>Description:</strong> {{ item.description }}</p>
+                            {% endif %}
+                            <p><strong>Posted:</strong> {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>ID:</strong> {{ item.id }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You haven't posted any food items yet. Start sharing to make a difference!</p>
+                <a href="{{ url_for('donor.post_food') }}" class="btn btn-primary">Post Your First Item</a>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-map">
+        <h2>📍 Map of Your Posted Items</h2>
+        <div id="map"></div>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const map = L.map('map').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Ensure JSON data is rendered safely from Flask
+        const foodItems = JSON.parse('{{ serialized_food_items | tojson | safe }}');
+        const bounds = [];
+
+        if (Array.isArray(foodItems)) {
+            foodItems.forEach(item => {
+                if (item.latitude !== null && item.longitude !== null) {
+                    const marker = L.marker([item.latitude, item.longitude]).addTo(map);
+                    const popupContent = `
+                        <strong>${item.name}</strong><br>
+                        Quantity: ${item.quantity}<br>
+                        Expires: ${item.expiration_date}<br>
+                        Location: ${item.location_name}<br>
+                        ${item.description ? 'Description: ' + item.description : ''}
+                    `;
+                    marker.bindPopup(popupContent);
+                    bounds.push([item.latitude, item.longitude]);
+                }
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds);
+            }
+        }
+    });
+</script>
+
+{% endblock %}

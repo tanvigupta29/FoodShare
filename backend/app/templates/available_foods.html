@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard">
+  <h2>Available Food Items</h2>
+
+  {% if food_items %}
+    <div class="food-items-grid">
+      {% for item in food_items %}
+        <div class="food-item-card">
+          <div class="food-item-header">
+            <h4>{{ item.name }}</h4>
+            <span class="status available">Available</span>
+          </div>
+          <div class="food-item-details">
+            <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+            <p><strong>Location:</strong> {{ item.location_name }}</p>
+            <p><strong>Expires:</strong> {{ item.expiration_date.strftime('%Y-%m-%d') }}</p>
+            {% if item.description %}
+              <p><strong>Description:</strong> {{ item.description }}</p>
+            {% endif %}
+            <p><strong>Posted:</strong> {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            <button class="btn btn-primary claim-btn" data-id="{{ item.id }}">Claim This Item</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="no-items">No food items are currently available.</p>
+  {% endif %}
+</div>
+
+<!-- Modal for Delivery Choice -->
+<div class="modal fade" id="deliveryModal" tabindex="-1" aria-labelledby="deliveryModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+      <div class="modal-header">
+        <h5 class="modal-title">Delivery Option</h5>
+      </div>
+      <div class="modal-body">
+        <p>Do you want a delivery partner for this item?</p>
+        <div class="d-flex justify-content-end">
+          <button id="no-delivery-btn" class="btn btn-secondary me-2" data-bs-dismiss="modal">No</button>
+          <button id="yes-delivery-btn" class="btn btn-primary" data-bs-dismiss="modal">Yes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let selectedFoodId = null;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Intercept Claim Button Click
+    document.body.addEventListener("click", function (e) {
+      if (e.target.classList.contains("claim-btn")) {
+        selectedFoodId = e.target.dataset.id;
+
+        // Check login status
+        const isLoggedIn = document.querySelector('meta[name="is-logged-in"]')?.content === 'true';
+        if (!isLoggedIn) {
+          alert("Please log in to claim food items.");
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        // Show delivery modal
+        const modal = new bootstrap.Modal(document.getElementById("deliveryModal"));
+        modal.show();
+      }
+    });
+
+    // Yes: wants delivery
+    document.getElementById("yes-delivery-btn").addEventListener("click", () => {
+      submitClaim(true);
+    });
+
+    // No: doesn't want delivery
+    document.getElementById("no-delivery-btn").addEventListener("click", () => {
+      submitClaim(false);
+    });
+
+    function submitClaim(wantsDelivery) {
+      if (!selectedFoodId) return;
+
+      fetch(`/claim/${selectedFoodId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wants_delivery: wantsDelivery })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+
+            // Optional: show delivery partner info
+            if (data.delivery_partner) {
+              alert(`📦 Delivery Partner Assigned:\nName: ${data.delivery_partner.name}\nPhone: ${data.delivery_partner.phone}`);
+            }
+
+            location.reload();
+          } else {
+            alert(data.message || "Failed to claim item.");
+          }
+        })
+        .catch(err => {
+          console.error("Claim error:", err);
+          alert("Something went wrong while claiming.");
+        });
+    }
+  });
+</script>
+{% endblock %}
